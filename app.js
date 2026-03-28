@@ -239,17 +239,58 @@ const { useState, useEffect, useCallback, useRef } = React;
         } catch (e) { alert("Lỗi chấp nhận lời mời!"); }
       };
 
-      const setTriKi = async (friendshipId, category) => {
+      const setTriKi = async (friendshipId, category, targetId) => {
         try {
-          const limit = category === 'love' ? 1 : 3;
-          if (category !== 'none') {
-            const currentOfCat = friends.filter(f => f.category === category);
-            if (currentOfCat.length >= limit) return alert(`Bạn chỉ có thể có tối đa ${limit} ${category}!`);
+          if (category === 'none') {
+            await db.collection('friendships').doc(friendshipId).update({ category: 'none', pendingCategory: null, pendingCategorySenderId: null });
+            fetchFriends(currentUser.id);
+            alert("Đã hủy tri kỉ!");
+            return;
           }
-          await db.collection('friendships').doc(friendshipId).update({ category });
+
+          const limit = category === 'love' ? 1 : 3;
+          
+          // Check my own limits
+          const myCatCount = friends.filter(f => f.category === category || (f.pendingCategory === category && f.pendingCategorySenderId === currentUser.id)).length;
+          if (myCatCount >= limit) return alert(`Bạn chỉ có thể có tối đa ${limit} ${category}!`);
+
+          // Check recipient's limits
+          const snap = await db.collection('friendships').where('uids', 'array-contains', targetId).get();
+          const targetFriends = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(f => f.status === 'accepted');
+          
+          const targetOfCat = targetFriends.filter(f => f.category === category || (f.pendingCategory === category && f.pendingCategorySenderId === targetId));
+          if (targetOfCat.length >= limit) {
+            return alert(`Đối phương đã đạt số lượng tối đa (${limit}) cho loại tri kỉ này!`);
+          }
+
+          await db.collection('friendships').doc(friendshipId).update({ 
+            pendingCategory: category,
+            pendingCategorySenderId: currentUser.id
+          });
           fetchFriends(currentUser.id);
-          alert("Đã cập nhật tri kỉ!");
+          alert("Đã gửi lời mời tri kỉ!");
         } catch (e) { alert("Lỗi cập nhật!"); }
+      };
+
+      const acceptSoulmateRequest = async (friendshipId, pendingCategory) => {
+        try {
+          await db.collection('friendships').doc(friendshipId).update({ 
+            category: pendingCategory,
+            pendingCategory: null,
+            pendingCategorySenderId: null
+          });
+          fetchFriends(currentUser.id);
+        } catch (e) { alert("Lỗi chấp nhận lời mời tri kỉ!"); }
+      };
+
+      const rejectSoulmateRequest = async (friendshipId) => {
+        try {
+          await db.collection('friendships').doc(friendshipId).update({ 
+            pendingCategory: null,
+            pendingCategorySenderId: null
+          });
+          fetchFriends(currentUser.id);
+        } catch (e) { alert("Lỗi từ chối lời mời tri kỉ!"); }
       };
 
       const searchUsers = async (q) => {
@@ -1351,20 +1392,49 @@ const { useState, useEffect, useCallback, useRef } = React;
                         friends.map(f => {
                           const otherId = f.uids.find(id => id !== currentUser.id);
                           const u = leaderboard.find(x => x.id === otherId) || { username: otherId };
+                          const isPendingMe = f.pendingCategory && f.pendingCategorySenderId !== currentUser.id;
+                          const isSentByMe = f.pendingCategory && f.pendingCategorySenderId === currentUser.id;
+
                           return (
-                            <div key={f.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 group">
-                              <div className="flex-1 min-w-0" onClick={() => setShowProfileUid(u.id)}>
-                                <div className="font-bold text-slate-800 flex items-center gap-2 cursor-pointer hover:text-indigo-600">{u.displayName || u.username} {f.category !== 'none' && <span className="text-lg" title={f.category}>{f.category === 'love' ? '❤️' : (f.category === 'sister' ? '🌸' : (f.category === 'brother' ? '✊' : '🤝'))}</span>}</div>
-                                <div className="text-[10px] text-slate-400 font-bold">ID: {u.id}</div>
+                            <div key={f.id} className="flex flex-col p-4 bg-slate-50 rounded-2xl border border-slate-100 group gap-3">
+                              <div className="flex items-center justify-between">
+                                <div className="flex-1 min-w-0" onClick={() => setShowProfileUid(u.id)}>
+                                  <div className="font-bold text-slate-800 flex items-center gap-2 cursor-pointer hover:text-indigo-600">
+                                    {u.displayName || u.username} 
+                                    {f.category && f.category !== 'none' && (
+                                      <span className="text-lg" title={f.category}>
+                                        {f.category === 'love' ? '❤️' : (f.category === 'sister' ? '🌸' : (f.category === 'brother' ? '✊' : '🤝'))}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="text-[10px] text-slate-400 font-bold">ID: {u.id}</div>
+                                </div>
+                                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  {['love', 'sister', 'brother', 'friend'].map(cat => (
+                                    <button key={cat} onClick={() => setTriKi(f.id, cat, otherId)} className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm border ${f.category === cat ? 'bg-white border-transparent shadow-sm' : 'bg-transparent border-slate-200 grayscale opacity-40 hover:grayscale-0 hover:opacity-100'}`} title={`Sét ${cat}`}>
+                                      {cat === 'love' ? '❤️' : (cat === 'sister' ? '🌸' : (cat === 'brother' ? '✊' : '🤝'))}
+                                    </button>
+                                  ))}
+                                  <button onClick={() => setTriKi(f.id, 'none', otherId)} className="w-8 h-8 rounded-lg flex items-center justify-center text-[10px] border border-slate-200 text-slate-400 font-black hover:bg-red-50 hover:text-red-500 hover:border-red-200">X</button>
+                                </div>
                               </div>
-                              <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                {['love', 'sister', 'brother', 'friend'].map(cat => (
-                                  <button key={cat} onClick={() => setTriKi(f.id, cat)} className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm border ${f.category === cat ? 'bg-white border-transparent shadow-sm' : 'bg-transparent border-slate-200 grayscale opacity-40 hover:grayscale-0 hover:opacity-100'}`} title={`Sét ${cat}`}>
-                                    {cat === 'love' ? '❤️' : (cat === 'sister' ? '🌸' : (cat === 'brother' ? '✊' : '🤝'))}
-                                  </button>
-                                ))}
-                                <button onClick={() => setTriKi(f.id, 'none')} className="w-8 h-8 rounded-lg flex items-center justify-center text-[10px] border border-slate-200 text-slate-400 font-black hover:bg-red-50 hover:text-red-500 hover:border-red-200">X</button>
-                              </div>
+                              
+                              {isPendingMe && (
+                                <div className="flex items-center justify-between bg-indigo-50 p-3 rounded-lg border border-indigo-100 mt-1">
+                                  <span className="text-xs font-bold text-indigo-800 flex items-center gap-2">
+                                    Mời làm {f.pendingCategory === 'love' ? '❤️' : (f.pendingCategory === 'sister' ? '🌸' : (f.pendingCategory === 'brother' ? '✊' : '🤝'))}
+                                  </span>
+                                  <div className="flex gap-2">
+                                    <button onClick={() => acceptSoulmateRequest(f.id, f.pendingCategory)} className="text-[10px] bg-indigo-600 text-white px-3 py-1.5 rounded font-black hover:bg-indigo-700">CHẤP NHẬN</button>
+                                    <button onClick={() => rejectSoulmateRequest(f.id)} className="text-[10px] bg-slate-300 text-slate-700 px-3 py-1.5 rounded font-black hover:bg-slate-400">TỪ CHỐI</button>
+                                  </div>
+                                </div>
+                              )}
+                              {isSentByMe && (
+                                <div className="text-[10px] font-bold text-slate-400 italic bg-slate-100 p-2 rounded-lg mt-1 text-center border border-slate-200">
+                                  Đang chờ đồng ý làm {f.pendingCategory === 'love' ? '❤️' : (f.pendingCategory === 'sister' ? '🌸' : (f.pendingCategory === 'brother' ? '✊' : '🤝'))}...
+                                </div>
+                              )}
                             </div>
                           );
                         })
