@@ -487,6 +487,16 @@ const { useState, useEffect, useCallback, useRef } = React;
       const [gameOverMsg, setGameOverMsg] = useState("");
       const [isThinking, setIsThinking] = useState(false);
 
+      const [showEmotePicker, setShowEmotePicker] = useState(false);
+      const [floatingEmote, setFloatingEmote] = useState(null);
+      const emoteTimeoutRef = useRef(null);
+
+      const showEmotePopup = useCallback((emoji, sender) => {
+        setFloatingEmote({ emoji, sender });
+        if (emoteTimeoutRef.current) clearTimeout(emoteTimeoutRef.current);
+        emoteTimeoutRef.current = setTimeout(() => setFloatingEmote(null), 3000);
+      }, []);
+
       const mqttRef = useRef(null);
       const roomIdRef = useRef('');
       const netIdRef = useRef(Math.random().toString(36).substr(2, 9));
@@ -625,6 +635,8 @@ const { useState, useEffect, useCallback, useRef } = React;
           setRematchRejectedMsg("Đối thủ vừa từ chối yêu cầu chơi lại của bạn!");
         } else if (data.type === 'SYNC') {
           gameRef.current.load(data.fen); updateBoardRef.current();
+        } else if (data.type === 'EMOTE') {
+          showEmotePopup(data.emoji, 'opponent');
         } else if (data.type === 'LEFT') {
           if (connStatusRef.current === 'connected') {
             playSfx('end');
@@ -641,7 +653,7 @@ const { useState, useEffect, useCallback, useRef } = React;
             if (mqttRef.current) { mqttRef.current.end(); mqttRef.current = null; }
           }
         }
-      }, []);
+      }, [showEmotePopup]);
       const dataCb = useRef(handleOnlineData);
       useEffect(() => { dataCb.current = handleOnlineData; }, [handleOnlineData]);
 
@@ -665,6 +677,14 @@ const { useState, useEffect, useCallback, useRef } = React;
           mqttRef.current.end(); mqttRef.current = null;
         }
         roomIdRef.current = ''; setRoomId(''); setConnStatus('');
+      };
+
+      const sendEmote = (emoji) => {
+        setShowEmotePicker(false);
+        showEmotePopup(emoji, 'me');
+        if (mode === "Online" && connStatus === 'connected') {
+          sendNetworkData({ type: 'EMOTE', emoji });
+        }
       };
 
       const handleReturnToMenu = () => {
@@ -1174,13 +1194,24 @@ const { useState, useEffect, useCallback, useRef } = React;
               )}
 
               <div className="w-full max-w-lg mb-6 flex items-center justify-between relative z-10 p-2">
-                <div className="flex gap-2">
-                  <button onClick={triggerLeave} className="px-5 py-2.5 bg-white shadow-sm rounded-full text-sm font-bold text-slate-600 hover:text-blue-600 hover:shadow-md transition-all flex items-center gap-2 border border-slate-200 group">
-                    <span className="group-hover:-translate-x-1 transition-transform">⬅</span> Rời Bàn Cờ
+                <div className="flex gap-2 relative">
+                  <button onClick={triggerLeave} className="px-4 md:px-5 py-2.5 bg-white shadow-sm rounded-full text-sm font-bold text-slate-600 hover:text-blue-600 hover:shadow-md transition-all flex items-center gap-2 border border-slate-200 group">
+                    <span className="group-hover:-translate-x-1 transition-transform">⬅</span> <span className="hidden sm:inline">Rời Bàn</span>
                   </button>
-                  <button onClick={triggerResign} className="px-5 py-2.5 bg-red-50 shadow-sm rounded-full text-sm font-bold text-red-600 hover:text-red-700 hover:bg-red-100 hover:shadow-md transition-all flex items-center gap-2 border border-red-200">
+                  <button onClick={triggerResign} className="hidden sm:flex px-4 md:px-5 py-2.5 bg-red-50 shadow-sm rounded-full text-sm font-bold text-red-600 hover:text-red-700 hover:bg-red-100 hover:shadow-md transition-all items-center gap-2 border border-red-200">
                     🏳️ Đầu Hàng
                   </button>
+                  <button onClick={() => setShowEmotePicker(!showEmotePicker)} className="px-3 py-2.5 bg-white shadow-sm rounded-full text-xl hover:bg-slate-100 hover:shadow-md transition-all flex items-center justify-center border border-slate-200" title="Biểu cảm">
+                    😛
+                  </button>
+
+                  {showEmotePicker && (
+                    <div className="absolute top-14 left-0 bg-white border border-slate-200 p-2 rounded-2xl shadow-xl flex gap-2 z-50 animate-in fade-in zoom-in">
+                      {['😛', '🤣', '😭', '😡', '🔥', '👏', '🥶', '🤡'].map(emoji => (
+                        <button key={emoji} onClick={() => sendEmote(emoji)} className="text-2xl hover:scale-125 transition-transform" title={emoji}>{emoji}</button>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex items-center gap-3">
@@ -1247,6 +1278,14 @@ const { useState, useEffect, useCallback, useRef } = React;
 
               <div className={`relative ${mode === "Online" && connStatus !== 'connected' && connStatus !== 'abandoned' ? 'opacity-20 pointer-events-none blur-sm' : ''} transition-all duration-700 w-full max-w-[500px] lg:max-w-[550px] mb-4`}>
                 <div className="board-grid shadow-2xl rounded-lg overflow-hidden border-[6px] sm:border-[10px] border-slate-900 bg-[#eeeed2] w-full aspect-square">{renderBoard()}</div>
+                
+                {floatingEmote && (
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[40] text-7xl md:text-[100px] drop-shadow-2xl animate-bounce pointer-events-none transition-opacity duration-300 flex flex-col items-center">
+                    <div className="text-sm font-bold bg-black/60 text-white px-4 py-1 rounded-full mb-2">{floatingEmote.sender === 'me' ? 'Bạn' : 'Đối Thủ'}</div>
+                    {floatingEmote.emoji}
+                  </div>
+                )}
+                
                 {gameOverMsg && !showRematchRequestModal && !rematchRejectedMsg && (
                   <div className="absolute inset-0 bg-slate-900/85 backdrop-blur-md flex flex-col items-center justify-center z-20 transition-all animate-in zoom-in duration-500 rounded-lg">
                     <h2 className="text-3xl sm:text-5xl font-black text-white drop-shadow-[0_0_20px_rgba(255,255,255,0.3)] mb-8 px-4 text-center leading-tight">{gameOverMsg}</h2>
