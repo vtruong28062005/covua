@@ -117,6 +117,78 @@ const computeDisplayRank = (u, allUsers) => {
   return 7;
 };
 
+function FloatingEmojisMap({ onSendEmote }) {
+  const emojisList = ['😛', '🤣', '😭', '😡', '🔥', '👏', '🥶', '🤡'];
+  const EMOJI_SIZE = 40;
+  
+  const [emojisPosition, setEmojisPosition] = useState(
+    emojisList.map((emoji) => ({
+      emoji,
+      id: emoji,
+      top: 0,
+      left: 0,
+      transitionDuration: 1000,
+    }))
+  );
+
+  useEffect(() => {
+    const getRandomPosition = () => {
+      const maxTop = window.innerHeight - EMOJI_SIZE;
+      const maxLeft = window.innerWidth - EMOJI_SIZE;
+      return {
+        top: Math.random() * maxTop,
+        left: Math.random() * maxLeft,
+      };
+    };
+
+    const intervalsRef = [];
+
+    emojisPosition.forEach((item, index) => {
+      const randomInterval = Math.random() * 2000 + 1500; 
+
+      const intervalId = setInterval(() => {
+        setEmojisPosition((prev) => {
+          const newPositions = [...prev];
+          const newPos = getRandomPosition();
+          newPositions[index] = {
+            ...newPositions[index],
+            ...newPos,
+            transitionDuration: randomInterval,
+          };
+          return newPositions;
+        });
+      }, randomInterval);
+
+      intervalsRef.push(intervalId);
+    });
+
+    return () => {
+      intervalsRef.forEach((id) => clearInterval(id));
+    };
+  }, []);
+
+  return (
+    <div className="fixed inset-0 pointer-events-none z-50">
+      {emojisPosition.map((item) => (
+        <button
+          key={item.id}
+          onClick={() => onSendEmote(item.emoji)}
+          className="absolute text-3xl hover:scale-125 transition-all ease-in-out pointer-events-auto"
+          style={{
+            top: `${item.top}px`,
+            left: `${item.left}px`,
+            transitionDuration: `${item.transitionDuration}ms`,
+            transform: 'translate(-50%, -50%)',
+          }}
+          title={item.emoji}
+        >
+          {item.emoji}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function App() {
   const [view, setView] = useState(() => {
     const savedView = localStorage.getItem('vnc_view');
@@ -1206,108 +1278,19 @@ function App() {
               </button>
 
               {showEmotePicker && (
-                import React, {useState, useEffect} from 'react';
-
-              // Danh sách các emoji cần hiển thị (giữ nguyên từ mã gốc)
-              const emojisList = ['😛', '🤣', '😭', '😡', '🔥', '👏', '🥶', '🤡'];
-
-              // Kích thước ước tính của emoji để tính toán không bay ra khỏi màn hình
-              const EMOJI_SIZE = 40;
-
-              function FloatingEmojisMap() {
-  // Giả sử có một hàm để gửi cảm xúc (như trong mã gốc)
-  const sendEmote = (emoji) => {
-                console.log(`Gửi cảm xúc: ${emoji}`);
-  };
-
-              // State lưu trữ vị trí hiện tại và thời gian di chuyển của từng emoji
-              // Bắt đầu tất cả từ góc trên bên trái (top: 0, left: 0)
-              const [emojisPosition, setEmojisPosition] = useState(
-    emojisList.map((emoji) => ({
-                emoji,
-                id: emoji, // Sử dụng emoji làm id (hoặc id duy nhất)
-              top: 0,
-              left: 0,
-              transitionDuration: 1000, // Thời gian di chuyển mặc định
-    }))
-              );
-
-  useEffect(() => {
-    // Hàm tạo vị trí ngẫu nhiên mới
-    const getRandomPosition = () => {
-      // Đảm bảo emoji không bay ra khỏi màn hình, trừ đi kích thước emoji
-      const maxTop = window.innerHeight - EMOJI_SIZE;
-              const maxLeft = window.innerWidth - EMOJI_SIZE;
-              return {
-                top: Math.random() * maxTop,
-              left: Math.random() * maxLeft,
-      };
-    };
-
-              // Cần tạo một mảng chứa các reference tới interval của từng emoji
-              // để có thể xóa chúng khi component unmount
-              const intervalsRef = [];
-
-    // Lặp qua từng emoji để thiết lập interval riêng
-    emojisPosition.forEach((item, index) => {
-      // Tạo một interval ngẫu nhiên cho mỗi emoji (từ 1.5s đến 3.5s)
-      // để chúng di chuyển không đồng bộ, tạo cảm giác "lung tung" hơn
-      const randomInterval = Math.random() * 2000 + 1500; 
-
-      const intervalId = setInterval(() => {
-                setEmojisPosition((prev) => {
-                  const newPositions = [...prev];
-                  // Cập nhật vị trí mới ngẫu nhiên cho emoji cụ thể
-                  const newPos = getRandomPosition();
-                  newPositions[index] = {
-                    ...newPositions[index],
-                    ...newPos,
-                    // Cập nhật thời gian transition tương ứng với interval để di chuyển mượt
-                    transitionDuration: randomInterval,
-                  };
-                  return newPositions;
-                });
-      }, randomInterval);
-
-              intervalsRef.push(intervalId);
-    });
-
-    // Hàm Cleanup để xóa tất cả interval khi component unmount, tránh leak memory
-    return () => {
-                intervalsRef.forEach((id) => clearInterval(id));
-    };
-  }, []); // Chỉ chạy một lần khi component mount
-
-              return (
-              // Container chính bao phủ toàn bộ màn hình, z-50 để nổi lên trên cùng
-              // pointer-events-none để không chặn các tương tác khác trên bản đồ
-              <div className="fixed inset-0 pointer-events-none z-50">
-                {emojisPosition.map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => sendEmote(item.emoji)}
-                    // Kiểu dáng CSS: absolute cho vị trí ngẫu nhiên
-                    // hover:scale-125 transition-all để mượt mà khi di chuyển và hover
-                    // pointer-events-auto để click vẫn hoạt động
-                    className="absolute text-3xl hover:scale-125 transition-all ease-in-out pointer-events-auto"
-                    style={{
-                      top: `${item.top}px`,
-                      left: `${item.left}px`,
-                      // Thời gian transition mượt mà tương ứng với interval
-                      transitionDuration: `${item.transitionDuration}ms`,
-                      // Đảm bảo tâm emoji ở vị trí (top, left)
-                      transform: 'translate(-50%, -50%)',
-                    }}
-                    title={item.emoji}
-                  >
-                    {item.emoji}
-                  </button>
-                ))}
-              </div>
-              );
-}
-
-              export default FloatingEmojisMap;
+                <FloatingEmojisMap onSendEmote={(emoji) => {
+                  console.log(`Gửi cảm xúc: ${emoji}`);
+                  setShowEmotePicker(false);
+                  
+                  if (typeof setFloatingEmote === 'function') {
+                    setFloatingEmote({ sender: 'me', emoji });
+                    setTimeout(() => setFloatingEmote(null), 3000);
+                  }
+                  
+                  if (typeof sendNetworkData === 'function' && typeof mode !== 'undefined' && mode === "Online") {
+                    sendNetworkData({ type: 'EMOTE', emoji });
+                  }
+                }} />
               )}
             </div>
 
