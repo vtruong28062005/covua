@@ -1,173 +1,173 @@
 .chess-piece {
-      cursor: pointer;
-      user-select: none;
-      transition: transform 0.1s;
-      filter: drop-shadow(0px 4px 3px rgba(0, 0, 0, 0.3));
-    }
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.1s;
+  filter: drop-shadow(0px 4px 3px rgba(0, 0, 0, 0.3));
+}
 
-    .chess-piece:active {
-      transform: scale(1.1);
-    }
+.chess-piece:active {
+  transform: scale(1.1);
+}
 
-    .board-grid {
-      display: grid;
-      grid-template-columns: repeat(8, 1fr);
-      grid-template-rows: repeat(8, 1fr);
-    }
+.board-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  grid-template-rows: repeat(8, 1fr);
+}
 
-    @keyframes blob {
-      0% {
-        transform: translate(0px, 0px) scale(1);
-      }
+@keyframes blob {
+  0% {
+    transform: translate(0px, 0px) scale(1);
+  }
 
-      33% {
-        transform: translate(30px, -50px) scale(1.1);
-      }
+  33% {
+    transform: translate(30px, -50px) scale(1.1);
+  }
 
-      66% {
-        transform: translate(-20px, 20px) scale(0.9);
-      }
+  66% {
+    transform: translate(-20px, 20px) scale(0.9);
+  }
 
-      100% {
-        transform: translate(0px, 0px) scale(1);
-      }
-    }
+  100% {
+    transform: translate(0px, 0px) scale(1);
+  }
+}
 
-    .animate-blob {
-      animation: blob 7s infinite;
-    }
+.animate-blob {
+  animation: blob 7s infinite;
+}
 
-    .animation-delay-2000 {
-      animation-delay: 2s;
-    }
+.animation-delay-2000 {
+  animation-delay: 2s;
+}
 
-    .animation-delay-4000 {
-      animation-delay: 4s;
-    }
+.animation-delay-4000 {
+  animation-delay: 4s;
+}
 
-    #app-loader {
-      position: fixed;
-      inset: 0;
-      background: #0f172a;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      z-index: 9999;
-      transition: opacity 0.4s ease;
-    }
+#app-loader {
+  position: fixed;
+  inset: 0;
+  background: #0f172a;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  transition: opacity 0.4s ease;
+}
 
-    #app-loader.hidden {
-      opacity: 0;
-      pointer-events: none;
-    }
+#app-loader.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
 
-    .loader-board {
-      display: grid;
-      grid-template-columns: repeat(4, 14px);
-      grid-template-rows: repeat(4, 14px);
-      gap: 3px;
-      margin-bottom: 24px;
-    }
+.loader-board {
+  display: grid;
+  grid-template-columns: repeat(4, 14px);
+  grid-template-rows: repeat(4, 14px);
+  gap: 3px;
+  margin-bottom: 24px;
+}
 
-    .loader-cell {
-      width: 14px;
-      height: 14px;
-      border-radius: 3px;
-      animation: loaderPulse 1.2s ease-in-out infinite;
-    }
+.loader-cell {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  animation: loaderPulse 1.2s ease-in-out infinite;
+}
 
-    .loader-cell:nth-child(odd) {
-      background: #769656;
-    }
+.loader-cell:nth-child(odd) {
+  background: #769656;
+}
 
-    .loader-cell:nth-child(even) {
-      background: #eeeed2;
-    }
+.loader-cell:nth-child(even) {
+  background: #eeeed2;
+}
 
-    .loader-cell:nth-child(1) {
-      animation-delay: 0s;
-    }
+.loader-cell:nth-child(1) {
+  animation-delay: 0s;
+}
 
-    .loader-cell:nth-child(2) {
-      animation-delay: 0.1s;
-    }
+.loader-cell:nth-child(2) {
+  animation-delay: 0.1s;
+}
 
-    .loader-cell:nth-child(3) {
-      animation-delay: 0.2s;
-    }
+.loader-cell:nth-child(3) {
+  animation-delay: 0.2s;
+}
 
-    .loader-cell:nth-child(4) {
-      animation-delay: 0.3s;
-    }
+.loader-cell:nth-child(4) {
+  animation-delay: 0.3s;
+}
 
-    .loader-cell:nth-child(5) {
-      animation-delay: 0.1s;
-    }
+.loader-cell:nth-child(5) {
+  animation-delay: 0.1s;
+}
 
-    .loader-cell:nth-child(6) {
-      animation-delay: 0.2s;
-    }
+.loader-cell:nth-child(6) {
+  animation-delay: 0.2s;
+}
 
-    .loader-cell:nth-child(7) {
-      animation-delay: 0.3s;
-    }
+.loader-cell:nth-child(7) {
+  animation-delay: 0.3s;
+}
 
-    .loader-cell:nth-child(8) {
-      animation-delay: 0.4s;
-    }
+.loader-cell:nth-child(8) {
+  animation-delay: 0.4s;
+}
 
-    .loader-cell:nth-child(9) {
-      animation-delay: 0.2s;
-    }
+.loader-cell:nth-child(9) {
+  animation-delay: 0.2s;
+}
 
-    .loader-cell:nth-child(10) {
-      animation-delay: 0.3s;
-    }
+.loader-cell:nth-child(10) {
+  animation-delay: 0.3s;
+}
 
-    .loader-cell:nth-child(11) {
-      animation-delay: 0.4s;
-    }
+.loader-cell:nth-child(11) {
+  animation-delay: 0.4s;
+}
 
-    .loader-cell:nth-child(12) {
-      animation-delay: 0.5s;
-    }
+.loader-cell:nth-child(12) {
+  animation-delay: 0.5s;
+}
 
-    .loader-cell:nth-child(13) {
-      animation-delay: 0.3s;
-    }
+.loader-cell:nth-child(13) {
+  animation-delay: 0.3s;
+}
 
-    .loader-cell:nth-child(14) {
-      animation-delay: 0.4s;
-    }
+.loader-cell:nth-child(14) {
+  animation-delay: 0.4s;
+}
 
-    .loader-cell:nth-child(15) {
-      animation-delay: 0.5s;
-    }
+.loader-cell:nth-child(15) {
+  animation-delay: 0.5s;
+}
 
-    .loader-cell:nth-child(16) {
-      animation-delay: 0.6s;
-    }
+.loader-cell:nth-child(16) {
+  animation-delay: 0.6s;
+}
 
-    @keyframes loaderPulse {
+@keyframes loaderPulse {
 
-      0%,
-      100% {
-        opacity: 0.3;
-        transform: scale(0.85);
-      }
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: scale(0.85);
+  }
 
-      50% {
-        opacity: 1;
-        transform: scale(1);
-      }
-    }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
 
-    .loader-text {
-      color: #94a3b8;
-      font-family: system-ui, sans-serif;
-      font-size: 14px;
-      font-weight: 600;
-      letter-spacing: 0.1em;
-      animation: loaderPulse 1.5s ease-in-out infinite;
-    }
+.loader-text {
+  color: #94a3b8;
+  font-family: system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  animation: loaderPulse 1.5s ease-in-out infinite;
+}
