@@ -25,6 +25,8 @@ function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [profileStats, setProfileStats] = useState({ total: 0, winRate: 0, history: [], soulmates: [] });
+  const [avatarUrl, setAvatarUrl] = useState(null);
+  const avatarInputRef = useRef(null);
 
   useEffect(() => { localStorage.setItem('vnc_view', view); }, [view]);
   useEffect(() => { localStorage.setItem('vnc_authMode', authMode); }, [authMode]);
@@ -50,6 +52,26 @@ function App() {
       setFriendRequests(all.filter(f => f.status === 'pending' && f.senderId !== uid));
     } catch (e) { console.warn('Friends fetch error', e); }
   };
+
+  const handleAvatarChange = (e) => {
+    const file = e.target.files[0];
+    if (!file || !currentUser) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const dataUrl = ev.target.result;
+      setAvatarUrl(dataUrl);
+      localStorage.setItem(`vnc_avatar_${currentUser.id}`, dataUrl);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  useEffect(() => {
+    if (currentUser) {
+      const saved = localStorage.getItem(`vnc_avatar_${currentUser.id}`);
+      if (saved) setAvatarUrl(saved);
+      else setAvatarUrl(null);
+    }
+  }, [currentUser?.id]);
 
   useEffect(() => {
     if (showProfileUid) {
@@ -960,9 +982,39 @@ function App() {
               const r = RANKS.find(x => x.id === computedRankId) || RANKS[0];
               return (
                 <div className="w-full bg-gradient-to-br from-indigo-900/80 to-slate-900/80 backdrop-blur-md border border-indigo-500/30 p-5 rounded-[2rem] shadow-2xl mb-8 flex items-center gap-5">
-                  <div className="w-16 h-16 sm:w-20 sm:h-20 bg-black/40 rounded-2xl border border-white/10 flex items-center justify-center text-4xl sm:text-5xl shrink-0 shadow-inner cursor-pointer hover:scale-110 transition-transform relative group/rank" onClick={() => setShowProfileUid(currentUser.id)}>
-                    {r.icon}
-                    <div className="absolute inset-0 bg-black/60 rounded-2xl opacity-0 group-hover/rank:opacity-100 flex items-center justify-center text-[10px] font-black uppercase text-white/80 transition-opacity">Hồ sơ</div>
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 shrink-0 relative group/avatar">
+                    <input
+                      ref={avatarInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleAvatarChange}
+                      id="avatar-upload-input"
+                    />
+                    {avatarUrl ? (
+                      <img
+                        src={avatarUrl}
+                        alt="Avatar"
+                        className="w-full h-full object-cover rounded-2xl border-2 border-indigo-400/60 shadow-lg cursor-pointer"
+                        onClick={() => setShowProfileUid(currentUser.id)}
+                      />
+                    ) : (
+                      <div
+                        className="w-full h-full bg-black/40 rounded-2xl border border-white/10 flex items-center justify-center text-4xl sm:text-5xl shadow-inner cursor-pointer"
+                        onClick={() => setShowProfileUid(currentUser.id)}
+                      >
+                        {r.icon}
+                      </div>
+                    )}
+                    <button
+                      onClick={() => avatarInputRef.current?.click()}
+                      className="absolute -bottom-1 -right-1 w-6 h-6 bg-indigo-500 hover:bg-indigo-400 rounded-full flex items-center justify-center shadow-lg border-2 border-slate-900 transition-colors z-10"
+                      title="Đổi ảnh đại diện"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="white" className="w-3 h-3">
+                        <path d="M2.695 14.763l-1.262 3.154a.5.5 0 00.65.65l3.155-1.262a4 4 0 001.343-.885L17.5 5.5a2.121 2.121 0 00-3-3L3.58 13.42a4 4 0 00-.885 1.343z" />
+                      </svg>
+                    </button>
                   </div>
                   <div className="flex-1 w-0">
                     <div className="flex justify-between items-start mb-1 w-full gap-2">
@@ -1239,7 +1291,30 @@ function App() {
 
               <div className="bg-gradient-to-br from-indigo-600 to-purple-700 p-8 pt-12 text-white relative">
                 <div className="flex items-center gap-6">
-                  <div className="w-24 h-24 bg-white/20 backdrop-blur-md rounded-3xl border border-white/30 flex items-center justify-center text-5xl shadow-2xl">{rInfo.icon}</div>
+                  <div className="w-24 h-24 relative shrink-0">
+                    {showProfileUid === currentUser?.id && avatarUrl ? (
+                      <img
+                        src={avatarUrl}
+                        alt="Avatar"
+                        className="w-full h-full object-cover rounded-3xl border-2 border-white/40 shadow-2xl"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-white/20 backdrop-blur-md rounded-3xl border border-white/30 flex items-center justify-center text-5xl shadow-2xl">
+                        {rInfo.icon}
+                      </div>
+                    )}
+                    {showProfileUid === currentUser?.id && (
+                      <button
+                        onClick={() => avatarInputRef.current?.click()}
+                        className="absolute -bottom-1 -right-1 w-7 h-7 bg-white/90 hover:bg-white rounded-full flex items-center justify-center shadow-lg border-2 border-indigo-500 transition-colors"
+                        title="Đổi ảnh đại diện"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="#6366f1" className="w-3.5 h-3.5">
+                          <path d="M2.695 14.763l-1.262 3.154a.5.5 0 00.65.65l3.155-1.262a4 4 0 001.343-.885L17.5 5.5a2.121 2.121 0 00-3-3L3.58 13.42a4 4 0 00-.885 1.343z" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
                   <div>
                     <h2 className="text-3xl font-black mb-1">{u.displayName || u.username}</h2>
                     <p className={`font-bold ${rInfo.color.replace('text-', 'text-white/80')} uppercase tracking-wider text-sm flex items-center gap-2`}>{rInfo.name} • {u.stars} Sao</p>
@@ -1333,7 +1408,6 @@ function App() {
                   </div>
                 </div>
               )}
-
               <div>
                 <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Danh sách bạn bè</h3>
                 <div className="space-y-3">
