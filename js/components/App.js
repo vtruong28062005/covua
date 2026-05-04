@@ -1293,7 +1293,7 @@ function App() {
         const rInfo = RANKS.find(r => r.id === (u.displayRankId || u.rankId)) || RANKS[0];
 
         return (
-          <div className="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-[200] flex items-center justify-center p-4 animate-in fade-in zoom-in duration-300">
+          <div className="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-[300] flex items-center justify-center p-4 animate-in fade-in zoom-in duration-300">
             <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col relative">
               <button onClick={() => setShowProfileUid(null)} className="absolute top-6 right-6 w-10 h-10 bg-slate-100 hover:bg-slate-200 rounded-full flex items-center justify-center font-bold text-slate-500 transition-colors z-10">✕</button>
 
