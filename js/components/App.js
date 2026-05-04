@@ -961,12 +961,21 @@ function App() {
                 const effectiveRankId = u.displayRankId || u.rankId;
                 const rInfo = RANKS.find(r => r.id === effectiveRankId) || RANKS.find(r => r.id === u.rankId) || RANKS[0];
                 const isMe = currentUser && u.id === currentUser.id;
+                const userAvatar = isMe ? avatarUrl : localStorage.getItem(`vnc_avatar_${u.id}`);
                 return (
-                  <div key={u.id} className={`flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-2xl border ${isMe ? "bg-indigo-500/20 border-indigo-500/50" : "bg-black/20 border-white/5"} transition-colors`}>
+                  <div key={u.id} className={`flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-2xl border cursor-pointer hover:brightness-110 transition-all ${isMe ? "bg-indigo-500/20 border-indigo-500/50" : "bg-black/20 border-white/5"}`} onClick={() => setShowProfileUid(u.id)}>
                     <div className={`w-8 h-8 sm:w-10 sm:h-10 shrink-0 flex items-center justify-center font-black rounded-lg ${idx === 0 ? "bg-yellow-400 text-yellow-900" : idx === 1 ? "bg-slate-300 text-slate-800" : idx === 2 ? "bg-orange-400 text-orange-900" : "bg-white/10 text-white/50"}`}>{idx + 1}</div>
+                    {/* Avatar */}
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 shrink-0 rounded-xl overflow-hidden border-2 border-white/20 shadow-md">
+                      {userAvatar ? (
+                        <img src={userAvatar} alt="avatar" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full bg-white/10 flex items-center justify-center text-xl">{rInfo.icon}</div>
+                      )}
+                    </div>
                     <div className="flex-1 min-w-0">
                       <div className="font-bold text-base sm:text-lg truncate flex items-center gap-2">{u.displayName || u.username} {isMe && <span className="bg-indigo-500 text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider">Bạn</span>}</div>
-                      <div className={`text-xs sm:text-sm font-bold mt-1 ${rInfo.color}`}>{rInfo.icon} {rInfo.name} • {u.stars} Sao</div>
+                      <div className={`text-xs sm:text-sm font-bold mt-1 ${rInfo.color}`}>{rInfo.name} • {u.stars} Sao</div>
                     </div>
                   </div>
                 );
