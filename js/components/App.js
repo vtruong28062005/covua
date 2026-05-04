@@ -198,6 +198,14 @@ function App() {
     } catch (e) { alert("Lỗi từ chối lời mời tri kỉ!"); }
   };
 
+  const removeFriend = async (friendshipId) => {
+    if (!window.confirm('Bạn có chắc muốn xóa người bạn này không?')) return;
+    try {
+      await db.collection('friendships').doc(friendshipId).delete();
+      fetchFriends(currentUser.id);
+    } catch (e) { alert('Lỗi xóa bạn bè: ' + e.message); }
+  };
+
   const searchUsers = async (q) => {
     if (!q.trim()) return setSearchResults([]);
     try {
@@ -1418,9 +1426,26 @@ function App() {
                       const isPendingMe = f.pendingCategory && f.pendingCategorySenderId !== currentUser.id;
                       const isSentByMe = f.pendingCategory && f.pendingCategorySenderId === currentUser.id;
 
+                      const friendAvatar = localStorage.getItem(`vnc_avatar_${otherId}`);
                       return (
                         <div key={f.id} className="flex flex-col p-4 bg-slate-50 rounded-2xl border border-slate-100 group gap-3">
-                          <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            {/* Avatar bạn bè */}
+                            <div
+                              className="w-11 h-11 shrink-0 rounded-xl overflow-hidden bg-indigo-100 flex items-center justify-center cursor-pointer hover:scale-110 transition-transform shadow-sm border border-slate-200"
+                              onClick={() => setShowProfileUid(u.id)}
+                              title="Xem hồ sơ"
+                            >
+                              {friendAvatar ? (
+                                <img src={friendAvatar} alt="avatar" className="w-full h-full object-cover" />
+                              ) : (
+                                <span className="text-xl select-none">
+                                  {(u.displayName || u.username || '?')[0].toUpperCase()}
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Tên + ID */}
                             <div className="flex-1 min-w-0" onClick={() => setShowProfileUid(u.id)}>
                               <div className="font-bold text-slate-800 flex items-center gap-2 cursor-pointer hover:text-indigo-600">
                                 {u.displayName || u.username}
@@ -1432,13 +1457,16 @@ function App() {
                               </div>
                               <div className="text-[10px] text-slate-400 font-bold">ID: {u.id}</div>
                             </div>
-                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+
+                            {/* Actions: tri kỉ + xóa */}
+                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                               {['love', 'sister', 'brother', 'friend'].map(cat => (
                                 <button key={cat} onClick={() => setTriKi(f.id, cat, otherId)} className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm border ${f.category === cat ? 'bg-white border-transparent shadow-sm' : 'bg-transparent border-slate-200 grayscale opacity-40 hover:grayscale-0 hover:opacity-100'}`} title={`Sét ${cat}`}>
                                   {cat === 'love' ? '❤️' : (cat === 'sister' ? '🌸' : (cat === 'brother' ? '✊' : '🤝'))}
                                 </button>
                               ))}
-                              <button onClick={() => setTriKi(f.id, 'none', otherId)} className="w-8 h-8 rounded-lg flex items-center justify-center text-[10px] border border-slate-200 text-slate-400 font-black hover:bg-red-50 hover:text-red-500 hover:border-red-200">X</button>
+                              <button onClick={() => setTriKi(f.id, 'none', otherId)} className="w-8 h-8 rounded-lg flex items-center justify-center text-[10px] border border-slate-200 text-slate-400 font-black hover:bg-red-50 hover:text-red-500 hover:border-red-200" title="Hủy tri kỉ">♡</button>
+                              <button onClick={() => removeFriend(f.id)} className="w-8 h-8 rounded-lg flex items-center justify-center text-[10px] border border-red-200 text-red-400 font-black hover:bg-red-500 hover:text-white" title="Xóa bạn bè">🗑</button>
                             </div>
                           </div>
 
