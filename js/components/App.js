@@ -586,25 +586,36 @@ function App() {
 
   const connectMQTT = (onReady) => {
     if (mqttRef.current) {
-      onReady(mqttRef.current);
-      return mqttRef.current; // FIX: must return client, not undefined
+      if (mqttRef.current.connected) onReady(mqttRef.current);
+      else mqttRef.current.once('connect', () => onReady(mqttRef.current));
+      return mqttRef.current;
     }
-    const clientId = 'vnc_' + netIdRef.current + '_' + Math.random().toString(36).slice(2, 7);
-    const cli = window.mqtt.connect('wss://broker.hivemq.com:8884/mqtt', {
+    const clientId = 'vnc_' + netIdRef.current + '_' + Math.random().toString(36).slice(2, 6);
+    // Sử dụng broker.emqx.io port 8084 (WSS)
+    const cli = window.mqtt.connect('wss://broker.emqx.io:8084/mqtt', {
       clientId,
       clean: true,
-      reconnectPeriod: 0,   // tắt auto-reconnect – chúng ta tự quản lý
-      connectTimeout: 12000,
+      connectTimeout: 15000,
+      reconnectPeriod: 5000, // Cho phép tự động kết nối lại nếu rớt mạng
     });
-    cli.on('connect', () => { mqttRef.current = cli; onReady(cli); });
-    cli.on('error', (e) => { console.error('[MQTT]', e); setConnStatus('error'); setGameOverMsg('Lỗi kết nối máy chủ không dây!'); });
+    mqttRef.current = cli; 
+    cli.on('connect', () => { onReady(cli); });
+    cli.on('error', (e) => { 
+      console.error('[MQTT Error]', e); 
+      setConnStatus('error'); 
+      setGameOverMsg('Lỗi kết nối máy chủ! Vui lòng thử lại.'); 
+    });
     return cli;
   };
 
   const disconnectOnline = () => {
     if (mqttRef.current) {
-      if (connStatus === 'connected') sendNetworkData({ type: 'LEFT' });
-      mqttRef.current.end(); mqttRef.current = null;
+      try {
+        if (connStatus === 'connected') sendNetworkData({ type: 'LEFT' });
+        mqttRef.current.removeAllListeners();
+        mqttRef.current.end();
+      } catch (e) { }
+      mqttRef.current = null;
     }
     roomIdRef.current = ''; setRoomId(''); setConnStatus('');
   };
@@ -644,8 +655,9 @@ function App() {
       setConnStatus('waiting'); setOnlineRole('host'); setHumanColor('w'); resetGame();
     });
 
-    cli.removeAllListeners('message');
-    cli.on('message', (t, m) => {
+    if (cli) {
+      cli.removeAllListeners('message');
+      cli.on('message', (t, m) => {
       try {
         const d = JSON.parse(m.toString());
         if (d.sender === netIdRef.current) return;
@@ -673,8 +685,9 @@ function App() {
       sendNetworkData({ type: 'JOIN_REQ' });
     });
 
-    cli.removeAllListeners('message');
-    cli.on('message', (t, m) => {
+    if (cli) {
+      cli.removeAllListeners('message');
+      cli.on('message', (t, m) => {
       try {
         const d = JSON.parse(m.toString());
         if (d.sender === netIdRef.current) return;
@@ -700,8 +713,9 @@ function App() {
       const iv = setInterval(() => { if (qStatus === 'matchmaking') ping(); else clearInterval(iv); }, 3000);
     });
 
-    cli.removeAllListeners('message');
-    cli.on('message', (t, m) => {
+    if (cli) {
+      cli.removeAllListeners('message');
+      cli.on('message', (t, m) => {
       try {
         const d = JSON.parse(m.toString());
         if (d.sender === netIdRef.current) return;
