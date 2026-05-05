@@ -585,10 +585,19 @@ function App() {
   };
 
   const connectMQTT = (onReady) => {
-    if (mqttRef.current) return onReady(mqttRef.current);
-    const cli = window.mqtt.connect('wss://broker.emqx.io:8084/mqtt', { clientId: 'vnc_' + netIdRef.current });
+    if (mqttRef.current) {
+      onReady(mqttRef.current);
+      return mqttRef.current; // FIX: must return client, not undefined
+    }
+    const clientId = 'vnc_' + netIdRef.current + '_' + Math.random().toString(36).slice(2, 7);
+    const cli = window.mqtt.connect('wss://broker.hivemq.com:8884/mqtt', {
+      clientId,
+      clean: true,
+      reconnectPeriod: 0,   // tắt auto-reconnect – chúng ta tự quản lý
+      connectTimeout: 12000,
+    });
     cli.on('connect', () => { mqttRef.current = cli; onReady(cli); });
-    cli.on('error', (e) => { console.error(e); setConnStatus('error'); setGameOverMsg('Lỗi kết nối máy chủ không dây!'); });
+    cli.on('error', (e) => { console.error('[MQTT]', e); setConnStatus('error'); setGameOverMsg('Lỗi kết nối máy chủ không dây!'); });
     return cli;
   };
 
@@ -635,6 +644,7 @@ function App() {
       setConnStatus('waiting'); setOnlineRole('host'); setHumanColor('w'); resetGame();
     });
 
+    cli.removeAllListeners('message');
     cli.on('message', (t, m) => {
       try {
         const d = JSON.parse(m.toString());
@@ -663,6 +673,7 @@ function App() {
       sendNetworkData({ type: 'JOIN_REQ' });
     });
 
+    cli.removeAllListeners('message');
     cli.on('message', (t, m) => {
       try {
         const d = JSON.parse(m.toString());
@@ -689,6 +700,7 @@ function App() {
       const iv = setInterval(() => { if (qStatus === 'matchmaking') ping(); else clearInterval(iv); }, 3000);
     });
 
+    cli.removeAllListeners('message');
     cli.on('message', (t, m) => {
       try {
         const d = JSON.parse(m.toString());
